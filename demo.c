@@ -11,6 +11,7 @@
 GLFWwindow* window;
 
 
+
 typedef struct {
   float position[3];
   float color[4];

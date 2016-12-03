@@ -13,8 +13,7 @@ typedef struct {
 #define CREATOR "Garrison Smith"
 #define RGB_COMPONENT_COLOR 255
 
-static PPMImage *readPPM(const char *filename)
-{
+static PPMImage *readPPM(const char *filename){
          char buff[16];
          PPMImage *img;
          FILE *fp;

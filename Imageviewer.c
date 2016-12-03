@@ -11,6 +11,7 @@ const Vertex Vertices[] = {
   {{-1, -1, 0}, {0, 0, 0, 1}}
 };
 
+
 GLuint myTexture;
 glGenTextures(1, &myTexture);
 glBindTextures(GL_TEXTURE_2D, myTexture);
