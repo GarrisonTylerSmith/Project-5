@@ -9,8 +9,6 @@
 #include <string.h>
 
 
-
-
 GLFWwindow* window;
 
 typedef struct {
