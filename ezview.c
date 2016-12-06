@@ -1,6 +1,8 @@
 #define GLFW_DLL 1
-
 #define GL_GLEXT_PROTOTYPES
+#define CREATOR "Garrison Smith"
+#define RGB_COMPONENT_COLOR 255
+
 #include <GLES2/gl2.h>
 #include <GLFW/glfw3.h>
 
@@ -25,7 +27,6 @@ typedef struct {
   float position[3];
   float color[4];
 } Vertex;
-
 
 const Vertex Vertices[] = {
   {{1, -1, 0}, {1, 0, 0, 1}},
@@ -90,14 +91,6 @@ char* fragment_shader_src =
         "void main(void) {\n"
         "    gl_FragColor = texture2D(Texture, DestinationTexcoord) * DestinationColor;\n"
         "}";
-
-
-char* fragment_shader_src =
-  "varying lowp vec4 DestinationColor;\n"
-  "\n"
-  "void main(void) {\n"
-  "    gl_FragColor = DestinationColor;\n"
-  "}\n";
 
 static PPMImage *readPPM(const char *filename){
          char buff[16];
@@ -185,8 +178,8 @@ GLint simple_shader(GLint shader_type, char* shader_src) {
   // Tell the shader where the source is
   glShaderSource(shader_id, 1, &shader_src, 0);
 
-  printf("Compiling shader\n");
-  printf("%s\n", shader_type);
+  //printf("Compiling shader\n");
+  //printf("%s\n", shader_type);
 
   // Actual compile shader
   glCompileShader(shader_id);
@@ -360,11 +353,11 @@ int main(int argc, char** argv) {
       fclose(fp);
       
       // block of code allocating memory to global header_buffer before its use
-      header_buffer = (struct header_data*)malloc(sizeof(struct header_data)); 
-      header_buffer->file_format = (char *)malloc(100);
-      header_buffer->file_height = (char *)malloc(100);
-      header_buffer->file_width = (char *)malloc(100);
-      header_buffer->file_maxcolor = (char *)malloc(100);
+      // int header_buffer = (struct header_data*)malloc(sizeof(struct header_data)); 
+      // header_buffer->file_format = (char *)malloc(100);
+      // header_buffer->file_height = (char *)malloc(100);
+      // header_buffer->file_width = (char *)malloc(100);
+      // header_buffer->file_maxcolor = (char *)malloc(100);
       
       // function calls which start the bulk of the program, reading PPM image data into a file
       // Not sure if I need this but I will just comment it out and see if I need it later
@@ -373,7 +366,7 @@ int main(int argc, char** argv) {
       // readPPM(input_name); // reads and parses header information
 
       // intermediate image_buffer memory allocation here as image_width and image_height were previously unavailable
-      image_buffer = (image_data *)malloc(sizeof(image_data) * image_width * image_height  + 1); // + 1
+      //image_buffer = (image_data *)malloc(sizeof(image_data) * image_width * image_height  + 1); // + 1
       
       // reads and stores image information
       readPPM(input_name); 
@@ -394,12 +387,6 @@ int main(int argc, char** argv) {
       GLuint index_buffer;
       GLuint tex;
       
-      
-      
-
-      GLint program_id, position_slot, color_slot;
-      GLuint vertex_buffer;
-      GLuint index_buffer;
 
       glfwSetErrorCallback(error_callback);
 
@@ -458,8 +445,6 @@ int main(int argc, char** argv) {
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
       glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices), Indices, GL_STATIC_DRAW);
 
-      int bufferWidth, bufferHeight;
-
 
       // Repeat
       while (!glfwWindowShouldClose(window)) {
@@ -495,9 +480,6 @@ int main(int argc, char** argv) {
                               GL_FALSE,
                               sizeof(Vertex),
                               (GLvoid*) (sizeof(float) * 3));
-
-        glViewPort(0, 0, bufferWidth, bufferHeight);
-
         // Draw everything
         glDrawElements(GL_TRIANGLES,
                        sizeof(Indices) / sizeof(GLubyte),
