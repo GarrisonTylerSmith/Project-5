@@ -43,15 +43,15 @@ const GLubyte Indices[] = {
 
 
 char* vertex_shader_src =
-"attribute vec4 Position;\n"
-        "attribute vec4 SourceColor;\n"
-        "attribute vec2 SourceTexcoord;\n"
-        "uniform vec2 Scale;\n"
-        "uniform vec2 Translation;"
-        "uniform vec2 Shear;\n"
+"attribute lowp vec4 Position;\n"
+        "attribute lowp vec4 SourceColor;\n"
+        "attribute lowp vec2 SourceTexcoord;\n"
+        "uniform lowp vec2 Scale;\n"
+        "uniform lowp vec2 Translation;"
+        "uniform lowp vec2 Shear;\n"
         "uniform float Rotation;\n"
-        "varying vec4 DestinationColor;\n"
-        "varying vec2 DestinationTexcoord;\n"
+        "varying lowp vec4 DestinationColor;\n"
+        "varying lowp vec2 DestinationTexcoord;\n"
         "mat4 RotationMatrix = mat4( cos(Rotation), -sin(Rotation), 0.0, 0.0,\n"
         "                            sin(Rotation),  cos(Rotation), 0.0, 0.0,\n"
         "                            0.0,            0.0,           1.0, 0.0,\n"
@@ -84,8 +84,8 @@ char* vertex_shader_src =
  * input image onto the geometry.
  */
 char* fragment_shader_src =
-        "varying vec4 DestinationColor;\n"
-        "varying vec2 DestinationTexcoord;\n"
+        "varying lowp vec4 DestinationColor;\n"
+        "varying lowp vec2 DestinationTexcoord;\n"
         "uniform sampler2D Texture;\n"
         "\n"
         "void main(void) {\n"
@@ -97,6 +97,7 @@ static PPMImage *readPPM(const char *filename){
          PPMImage *img;
          FILE *fp;
          int c, rgb_comp_color;
+
          //open PPM file for reading
          fp = fopen(filename, "rb");
          if (!fp) {
@@ -111,8 +112,8 @@ static PPMImage *readPPM(const char *filename){
          }
 
     //check the image format
-    if (buff[0] != 'P' || buff[1] != '6') {
-         fprintf(stderr, "Invalid image format (must be 'P6')\n");
+    if (buff[0] != 'P' || (buff[1] != '6' && buff[1] != '3')) {
+         fprintf(stderr, "Invalid image format (must be 'P6' or P3)\n");
          exit(1);
     }
 
@@ -215,7 +216,7 @@ int simple_program() {
   glLinkProgram(program_id);
 
   glGetProgramiv(program_id, GL_LINK_STATUS, &link_success);
-
+// error message
   if (link_success == GL_FALSE) {
     GLchar message[256];
     glGetProgramInfoLog(program_id, sizeof(message), 0, &message[0]);
@@ -242,8 +243,8 @@ float RotationTo = 0;
 float Rotation = 0;
 
 
-void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
+void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
+
     if (action == GLFW_PRESS)
         switch (key) {
             // Scale up the whole image
@@ -352,24 +353,17 @@ int main(int argc, char** argv) {
       }   
       fclose(fp);
       
-      // block of code allocating memory to global header_buffer before its use
-      // int header_buffer = (struct header_data*)malloc(sizeof(struct header_data)); 
-      // header_buffer->file_format = (char *)malloc(100);
-      // header_buffer->file_height = (char *)malloc(100);
-      // header_buffer->file_width = (char *)malloc(100);
-      // header_buffer->file_maxcolor = (char *)malloc(100);
-      
       // function calls which start the bulk of the program, reading PPM image data into a file
       // Not sure if I need this but I will just comment it out and see if I need it later
       //******
 
-      // readPPM(input_name); // reads and parses header information
 
       // intermediate image_buffer memory allocation here as image_width and image_height were previously unavailable
       //image_buffer = (image_data *)malloc(sizeof(image_data) * image_width * image_height  + 1); // + 1
       
       // reads and stores image information
-      readPPM(input_name); 
+      PPMImage* image = readPPM(input_name); 
+
       printf("Done reading .ppm file.\n");
       
       
@@ -395,8 +389,8 @@ int main(int argc, char** argv) {
         return -1;
 
       glfwDefaultWindowHints();
-      glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
-      glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+      // glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+      // glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
       glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
       glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
@@ -445,6 +439,42 @@ int main(int argc, char** argv) {
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
       glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices), Indices, GL_STATIC_DRAW);
 
+      // Get window height and width
+      int bufferWidth, bufferHeight;
+      glfwGetFramebufferSize(window, &bufferWidth, &bufferHeight);
+
+      // texture code
+      glGenTextures(1, &tex);
+      glBindTexture(GL_TEXTURE_2D, tex);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image->x, image->y, 0, GL_RGB, GL_FLOAT, image->data);
+
+      glVertexAttribPointer(position_slot,
+                            3,
+                            GL_FLOAT,
+                            GL_FALSE,
+                            sizeof(Vertex),
+                            0);
+
+      glVertexAttribPointer(color_slot,
+                            4,
+                            GL_FLOAT,
+                            GL_FALSE,
+                            sizeof(Vertex),
+                            (GLvoid*) (sizeof(float) * 3));
+
+      glVertexAttribPointer(texcoord_slot,
+                            2,
+                            GL_FLOAT,
+                            GL_FALSE,
+                            sizeof(Vertex),
+                            (GLvoid*) (sizeof(float) * 7));
+
+      // Setup callbacks for events
+      glfwSetKeyCallback(window, keyboard_callback);
+
+
 
       // Repeat
       while (!glfwWindowShouldClose(window)) {
@@ -462,24 +492,11 @@ int main(int argc, char** argv) {
         glUniform1f(rotation_slot, Rotation);
 
         // clear the screen
-        glClearColor(0, 104.0/255.0, 55.0/255.0, 1.0);
+        glClearColor(0, 0.0, 0.0, 1.0);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glViewport(0, 0, 640, 480);
+        glViewport(0, 0, bufferWidth, bufferHeight);
 
-        glVertexAttribPointer(position_slot,
-                              3,
-                              GL_FLOAT,
-                              GL_FALSE,
-                              sizeof(Vertex),
-                              0);
-
-        glVertexAttribPointer(color_slot,
-                              4,
-                              GL_FLOAT,
-                              GL_FALSE,
-                              sizeof(Vertex),
-                              (GLvoid*) (sizeof(float) * 3));
         // Draw everything
         glDrawElements(GL_TRIANGLES,
                        sizeof(Indices) / sizeof(GLubyte),
